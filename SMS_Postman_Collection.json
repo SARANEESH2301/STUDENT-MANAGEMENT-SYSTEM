@@ -1,0 +1,292 @@
+{
+  "info": {
+    "name": "Student Management System — API",
+    "_postman_id": "sms-api-collection-saraneesh",
+    "description": "Complete REST API collection for the Student Management System.\nAuthor: SARANEESH S\n\nSetup:\n1. Set base_url variable to: http://127.0.0.1:8000\n2. Run '1. Register' or '2. Login' — the token auto-saves.\n3. All protected requests use {{token}} automatically.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://127.0.0.1:8000", "type": "string" },
+    { "key": "token",    "value": "",                       "type": "string" },
+    { "key": "student_id", "value": "1",                   "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "1. Register",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "if (pm.response.code === 201) {",
+            "  pm.collectionVariables.set('token', pm.response.json().token);",
+            "  pm.test('Registration successful', () => pm.response.to.have.status(201));",
+            "  pm.test('Token returned', () => pm.expect(pm.response.json().token).to.be.a('string'));",
+            "  pm.test('Password not in response', () => pm.expect(JSON.stringify(pm.response.json())).to.not.include('password'));",
+            "}"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/api/auth/register/",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"testuser@college.edu\",\n  \"username\": \"testuser\",\n  \"first_name\": \"Test\",\n  \"last_name\": \"User\",\n  \"password\": \"TestPass@123\",\n  \"password_confirm\": \"TestPass@123\"\n}" }
+          }
+        },
+        {
+          "name": "2. Login (Admin)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "if (pm.response.code === 200) {",
+            "  pm.collectionVariables.set('token', pm.response.json().token);",
+            "  pm.test('Login successful', () => pm.response.to.have.status(200));",
+            "  pm.test('Token returned', () => pm.expect(pm.response.json().token).to.be.a('string'));",
+            "  pm.test('Password not in response', () => pm.expect(JSON.stringify(pm.response.json())).to.not.include('password'));",
+            "}"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/api/auth/login/",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@college.edu\",\n  \"password\": \"Admin@1234\"\n}" }
+          }
+        },
+        {
+          "name": "3. Login (Invalid credentials)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Returns 400', () => pm.response.to.have.status(400));",
+            "pm.test('Generic error message', () => {",
+            "  const body = JSON.stringify(pm.response.json());",
+            "  pm.expect(body).to.not.include('admin@college.edu');",
+            "});"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/api/auth/login/",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@college.edu\",\n  \"password\": \"wrongpassword\"\n}" }
+          }
+        },
+        {
+          "name": "4. Get Profile",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Returns 200', () => pm.response.to.have.status(200));",
+            "pm.test('No password in response', () => pm.expect(JSON.stringify(pm.response.json())).to.not.include('password'));"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Token {{token}}" }],
+            "url": "{{base_url}}/api/auth/profile/"
+          }
+        },
+        {
+          "name": "5. Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Token {{token}}" }
+            ],
+            "url": "{{base_url}}/api/auth/change-password/",
+            "body": { "mode": "raw", "raw": "{\n  \"old_password\": \"Admin@1234\",\n  \"new_password\": \"Admin@5678\",\n  \"new_password_confirm\": \"Admin@5678\"\n}" }
+          }
+        },
+        {
+          "name": "6. Logout",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Returns 200', () => pm.response.to.have.status(200));",
+            "pm.collectionVariables.set('token', '');"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Token {{token}}" }],
+            "url": "{{base_url}}/api/auth/logout/"
+          }
+        },
+        {
+          "name": "7. Unauthorized request (no token)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Returns 401', () => pm.response.to.have.status(401));"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/students/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "8. Dashboard Stats",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Returns 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has total_students', () => pm.expect(pm.response.json()).to.have.property('total_students'));",
+            "pm.test('Has recent_students', () => pm.expect(pm.response.json()).to.have.property('recent_students'));"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Token {{token}}" }],
+            "url": "{{base_url}}/api/students/dashboard/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Students",
+      "item": [
+        {
+          "name": "9. List all students",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Returns 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has results array', () => pm.expect(pm.response.json().results).to.be.an('array'));",
+            "pm.test('Has count field', () => pm.expect(pm.response.json()).to.have.property('count'));",
+            "if (pm.response.json().results.length > 0) {",
+            "  pm.collectionVariables.set('student_id', pm.response.json().results[0].id);",
+            "}"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Token {{token}}" }],
+            "url": "{{base_url}}/api/students/"
+          }
+        },
+        {
+          "name": "10. Search students",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Returns 200', () => pm.response.to.have.status(200));"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Token {{token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/students/?search=Arjun",
+              "query": [{ "key": "search", "value": "Arjun" }]
+            }
+          }
+        },
+        {
+          "name": "11. Filter by status",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Token {{token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/students/?status=active&ordering=-cgpa",
+              "query": [
+                { "key": "status",   "value": "active" },
+                { "key": "ordering", "value": "-cgpa" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "12. Get single student",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Returns 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has student_id', () => pm.expect(pm.response.json().data).to.have.property('student_id'));"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Token {{token}}" }],
+            "url": "{{base_url}}/api/students/{{student_id}}/"
+          }
+        },
+        {
+          "name": "13. Get nonexistent student (404)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Returns 404', () => pm.response.to.have.status(404));"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Token {{token}}" }],
+            "url": "{{base_url}}/api/students/99999/"
+          }
+        },
+        {
+          "name": "14. Create student (Admin)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Returns 201', () => pm.response.to.have.status(201));",
+            "pm.test('Has message', () => pm.expect(pm.response.json()).to.have.property('message'));"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Token {{token}}" }
+            ],
+            "url": "{{base_url}}/api/students/",
+            "body": { "mode": "raw", "raw": "{\n  \"student_id\": \"24TEST01\",\n  \"first_name\": \"Postman\",\n  \"last_name\": \"Test\",\n  \"email\": \"postman.test@college.edu\",\n  \"phone\": \"+91 9000000001\",\n  \"gender\": \"M\",\n  \"date_of_birth\": \"2004-01-01\",\n  \"department\": 1,\n  \"year_of_study\": 2,\n  \"section\": \"A\",\n  \"cgpa\": \"8.50\",\n  \"status\": \"active\"\n}" }
+          }
+        },
+        {
+          "name": "15. Create student — missing required fields (400)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Returns 400', () => pm.response.to.have.status(400));",
+            "pm.test('Has errors', () => pm.expect(pm.response.json()).to.have.property('errors'));"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Token {{token}}" }
+            ],
+            "url": "{{base_url}}/api/students/",
+            "body": { "mode": "raw", "raw": "{\n  \"student_id\": \"MISSING001\"\n}" }
+          }
+        },
+        {
+          "name": "16. Update student (PATCH)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Returns 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has message', () => pm.expect(pm.response.json()).to.have.property('message'));"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Token {{token}}" }
+            ],
+            "url": "{{base_url}}/api/students/{{student_id}}/",
+            "body": { "mode": "raw", "raw": "{\n  \"cgpa\": \"9.25\",\n  \"status\": \"active\"\n}" }
+          }
+        },
+        {
+          "name": "17. Delete student",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Returns 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has message', () => pm.expect(pm.response.json()).to.have.property('message'));"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Token {{token}}" }],
+            "url": "{{base_url}}/api/students/{{student_id}}/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Departments",
+      "item": [
+        {
+          "name": "18. List departments",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Token {{token}}" }],
+            "url": "{{base_url}}/api/students/departments/"
+          }
+        },
+        {
+          "name": "19. Create department",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Token {{token}}" }
+            ],
+            "url": "{{base_url}}/api/students/departments/",
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Artificial Intelligence & Data Science\",\n  \"code\": \"AIDS\"\n}" }
+          }
+        }
+      ]
+    }
+  ]
+}
